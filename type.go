@@ -268,3 +268,7 @@ func (e *Error) GetDomain() Quark {
 func (e *Error) GetCode() int {
 	return int(e.code)
 }
+
+func (e *Error) Free() {
+	C.g_error_free(e)
+}
