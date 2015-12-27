@@ -270,5 +270,5 @@ func (e *Error) GetCode() int {
 }
 
 func (e *Error) Free() {
-	C.g_error_free(e)
+	C.g_error_free((*C.GError)(e))
 }
