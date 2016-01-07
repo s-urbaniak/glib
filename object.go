@@ -8,6 +8,7 @@ import "C"
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"unsafe"
 )
 
@@ -107,10 +108,21 @@ type sigHandler struct {
 	cb, p0 reflect.Value
 }
 
-var obj_handlers = make(map[uintptr]map[SigHandlerId]*sigHandler)
+var (
+	obj_handlers = make(map[uintptr]map[SigHandlerId]*sigHandler)
+	mu           sync.Mutex // protects access to obj_handlers
+)
 
-func (o *Object) connect(noi bool, sid SignalId, detail Quark, cb_func,
-	param0 interface{}) {
+func (o *Object) connect(
+	noi bool,
+	sid SignalId,
+	detail Quark,
+	cb_func,
+	param0 interface{},
+) {
+	mu.Lock()
+	defer mu.Unlock()
+
 	cb := reflect.ValueOf(cb_func)
 	if cb.Kind() != reflect.Func {
 		panic("cb_func isn't a function")
@@ -270,6 +282,9 @@ func convertVal(t reflect.Type, v reflect.Value) reflect.Value {
 }
 
 func objectMarshal(mp *C.MarshalParams) {
+	mu.Lock()
+	defer mu.Unlock()
+
 	gc := (*C.GoClosure)(mp.cl)
 	n_param := int(mp.n_param)
 	first_param := 0
